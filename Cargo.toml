@@ -1,0 +1,13 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "crates/rustykrab-core",
+    "crates/rustykrab-widget",
+    "crates/rustykrab-ast",
+    "crates/rustykrab-parser",
+    "crates/rustykrab-generator",
+    "crates/rustykrab-swiftui",
+    "crates/rustykrab-compose",
+    "crates/rustykrab-cli"
+]
