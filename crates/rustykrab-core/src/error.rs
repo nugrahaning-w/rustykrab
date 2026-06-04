@@ -16,3 +16,23 @@ pub enum RustyKrabError {
     Cli(String),
 
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn create_parsing_error() {
+
+        let error =
+            RustyKrabError::Parsing(
+                "invalid widget".into()
+            );
+
+        assert!(
+            error.to_string()
+                .contains("Parsing error")
+        );
+    }
+}
