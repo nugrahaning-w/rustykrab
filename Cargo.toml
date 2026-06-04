@@ -1,13 +1,4 @@
 [workspace]
 resolver = "2"
 
-members = [
-    "crates/rustykrab-core",
-    "crates/rustykrab-widget",
-    "crates/rustykrab-ast",
-    "crates/rustykrab-parser",
-    "crates/rustykrab-generator",
-    "crates/rustykrab-swiftui",
-    "crates/rustykrab-compose",
-    "crates/rustykrab-cli"
-]
+members = ["crates/rustykrab-ast", "crates/rustykrab-cli", "crates/rustykrab-compose","crates/rustykrab-core", "crates/rustykrab-generator", "crates/rustykrab-parser", "crates/rustykrab-swiftui", "crates/rustykrab-widget"]
