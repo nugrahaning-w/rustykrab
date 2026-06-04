@@ -2,7 +2,6 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum RustyKrabError {
-
     #[error("Parsing error: {0}")]
     Parsing(String),
 
@@ -14,7 +13,6 @@ pub enum RustyKrabError {
 
     #[error("CLI error: {0}")]
     Cli(String),
-
 }
 
 #[cfg(test)]
@@ -24,15 +22,8 @@ mod tests {
 
     #[test]
     fn create_parsing_error() {
+        let error = RustyKrabError::Parsing("invalid widget".into());
 
-        let error =
-            RustyKrabError::Parsing(
-                "invalid widget".into()
-            );
-
-        assert!(
-            error.to_string()
-                .contains("Parsing error")
-        );
+        assert!(error.to_string().contains("Parsing error"));
     }
 }
