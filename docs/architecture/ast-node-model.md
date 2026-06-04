@@ -1,126 +1,195 @@
 # AST Node Model Specification
 
-Version: 1.0
-Project: RustyKrab
-Module: AST Engine
-Status: Draft
-Author: Aji Nugrahaning Widhi
-Last Updated: June 2026
+**Project:** RustyKrab
+**Module:** AST Engine
+**Document Type:** Architecture Specification
+**Version:** 1.0
+**Status:** Draft
+**Owner:** Core Framework Team
 
 ---
 
-# 1. Overview
+# 1. Purpose
 
-Dokumen ini mendefinisikan struktur data utama yang digunakan oleh RustyKrab AST Engine.
+Dokumen ini mendefinisikan model data inti yang digunakan untuk merepresentasikan Abstract Syntax Tree (AST) pada RustyKrab.
 
-AST Node Model merupakan representasi internal dari UI yang telah dikonversi dari Rust DSL dan akan digunakan sebagai input untuk seluruh code generator.
+AST Node Model merupakan kontrak utama yang digunakan oleh:
 
-Dokumen ini mendefinisikan:
+* AST Builder
+* Validation Framework
+* Visitor Framework
+* SwiftUI Generator
+* Compose Generator
+* Future Generators
 
-* AstTree
-* AstNode
-* Node Identity
-* Parent-Child Relationship
-* Tree Structure
-* Traversal Rules
-* Validation Rules
-* Serialization Model
-
-Dokumen ini menjadi referensi utama untuk implementasi crate:
-
-```text
-crates/rustykrab-ast
-```
+Dokumen ini menjelaskan struktur internal AST serta hubungan antar node yang digunakan untuk merepresentasikan UI secara platform-independent.
 
 ---
 
 # 2. Design Goals
 
-AST Node Model harus memenuhi karakteristik berikut:
+AST Node Model harus memenuhi tujuan berikut:
 
 ## Platform Independent
 
-Tidak mengandung SwiftUI maupun Compose specific implementation.
+Model tidak boleh mengandung implementasi spesifik platform.
 
-## Serializable
+Contoh yang tidak diperbolehkan:
 
-Dapat dikonversi menjadi JSON.
+```swift
+Text("Hello")
+```
 
-## Traversable
-
-Mudah ditraverse menggunakan Visitor Pattern.
-
-## Immutable Friendly
-
-Mendukung transformasi AST tanpa mutasi langsung.
-
-## Extensible
-
-Node baru dapat ditambahkan tanpa mengubah struktur inti.
+```kotlin
+Text("Hello")
+```
 
 ---
 
-# 3. High-Level Structure
+## Serializable
 
-AST direpresentasikan sebagai tree.
+Model harus dapat diubah ke JSON dan dikembalikan kembali tanpa kehilangan informasi.
+
+---
+
+## Traversable
+
+Model harus mudah ditraverse menggunakan Visitor Pattern.
+
+---
+
+## Extensible
+
+Node baru dapat ditambahkan tanpa mengubah struktur fundamental AST.
+
+---
+
+## Deterministic
+
+Input yang sama harus menghasilkan struktur AST yang sama.
+
+---
+
+# 3. High Level Architecture
+
+AST direpresentasikan sebagai tree hierarchy.
 
 ```text
 AstTree
 │
 └── AstNode
      │
-     ├── id
-     ├── node_type
-     ├── properties
-     └── children
+     ├── NodeType
+     ├── Properties
+     └── Children
 ```
 
-Seluruh UI direpresentasikan oleh satu root node yang berada di dalam AstTree.
+Setiap elemen UI direpresentasikan oleh satu AstNode.
 
 ---
 
-# 4. AstTree
+# 4. AST Structure Overview
+
+Contoh representasi UI:
+
+```text
+VStack
+├── Text("Hello")
+└── Button("Login")
+```
+
+AST:
+
+```text
+AstTree
+│
+└── VStack
+     │
+     ├── Text
+     └── Button
+```
+
+JSON:
+
+```json
+{
+  "root": {
+    "node_type": "VStack",
+    "properties": {},
+    "children": [
+      {
+        "node_type": "Text",
+        "properties": {
+          "text": "Hello"
+        }
+      },
+      {
+        "node_type": "Button",
+        "properties": {
+          "title": "Login"
+        }
+      }
+    ]
+  }
+}
+```
+
+---
+
+# 5. Core Components
+
+AST terdiri dari dua komponen utama:
+
+```text
+AstTree
+AstNode
+```
+
+---
+
+# 6. AstTree
 
 ## Purpose
 
-AstTree merupakan root container dari seluruh Abstract Syntax Tree.
+AstTree merupakan root container yang menyimpan seluruh struktur AST.
 
-AstTree menjadi entry point untuk:
-
-* Validation
-* Traversal
-* Serialization
-* Code Generation
+Semua proses compiler dimulai dari AstTree.
 
 ---
 
-## Structure
+## Responsibilities
+
+### Root Ownership
+
+Memiliki root node AST.
+
+---
+
+### Traversal Entry Point
+
+Menjadi titik awal traversal.
+
+---
+
+### Validation Entry Point
+
+Menjadi titik awal validasi.
+
+---
+
+### Generator Entry Point
+
+Menjadi input seluruh generator.
+
+---
+
+## Rust Model
 
 ```rust
 pub struct AstTree {
     pub root: AstNode,
 }
 ```
-
----
-
-## Responsibilities
-
-### Store Root Node
-
-Menyimpan node paling atas dalam tree.
-
-### Provide Traversal Entry Point
-
-Generator dan validator memulai traversal dari root.
-
-### Provide Serialization Entry Point
-
-AST dapat diubah menjadi JSON melalui AstTree.
-
-### Provide Validation Entry Point
-
-Semua validator bekerja pada level AstTree.
 
 ---
 
@@ -134,30 +203,70 @@ AstTree
 
 ---
 
-# 5. AstNode
+## Constraints
 
-## Purpose
+### Single Root
 
-AstNode merupakan unit terkecil dalam AST.
+AST hanya boleh memiliki satu root.
 
-Semua elemen UI direpresentasikan sebagai AstNode.
-
-Contoh:
+Valid:
 
 ```text
-Text
-Button
-Image
-VStack
-Screen
 App
 ```
 
-Semuanya memiliki struktur yang sama.
+Invalid:
+
+```text
+App
+App
+```
 
 ---
 
-## Structure
+### Root Required
+
+AstTree tidak boleh kosong.
+
+---
+
+# 7. AstNode
+
+## Purpose
+
+AstNode merupakan representasi universal dari setiap elemen UI.
+
+Seluruh widget, layout, dan container direpresentasikan menggunakan struktur yang sama.
+
+---
+
+## Design Philosophy
+
+Daripada membuat:
+
+```rust
+TextNode
+ButtonNode
+ImageNode
+```
+
+RustyKrab menggunakan:
+
+```rust
+AstNode
+```
+
+yang dikombinasikan dengan:
+
+```rust
+NodeType
+```
+
+Pendekatan ini lebih scalable dan lebih cocok untuk compiler architecture.
+
+---
+
+## Rust Model
 
 ```rust
 pub struct AstNode {
@@ -170,39 +279,23 @@ pub struct AstNode {
 
 ---
 
-# 6. AstNode Fields
+# 8. Node Identity
 
-## 6.1 NodeId
+## Purpose
 
-### Purpose
-
-Memberikan identitas unik untuk setiap node.
+Setiap node harus memiliki identitas unik.
 
 ---
 
-### Definition
+## Rust Model
 
 ```rust
 pub type NodeId = String;
 ```
 
-Implementasi berikut juga diperbolehkan:
-
-```rust
-pub struct NodeId(Uuid);
-```
-
 ---
 
-### Requirements
-
-* Wajib unik dalam satu tree
-* Tidak boleh kosong
-* Tidak boleh berubah setelah dibuat
-
----
-
-### Example
+## Example
 
 ```text
 node-1
@@ -212,78 +305,76 @@ node-3
 
 ---
 
-## 6.2 NodeType
+## Constraints
 
-### Purpose
+* Harus unik dalam satu tree
+* Tidak boleh kosong
+* Tidak boleh berubah setelah dibuat
+
+---
+
+# 9. Node Type
+
+## Purpose
 
 Menentukan jenis node.
 
 ---
 
-### Definition
-
-```rust
-pub enum NodeType
-```
-
----
-
-### Example
+## Examples
 
 ```text
 App
 Screen
+
 VStack
+HStack
+
 Text
 Button
+Image
+TextField
 ```
 
 ---
 
-### Requirements
+## Ownership
 
-* Harus valid
-* Harus berasal dari NodeType enum
+Definisi lengkap berada pada:
+
+```text
+node-types.md
+```
 
 ---
 
-## 6.3 Properties
+# 10. Properties
 
-### Purpose
+## Purpose
 
 Menyimpan konfigurasi node.
 
 ---
 
-### Definition
+## Examples
 
-```rust
-pub type Properties =
-HashMap<String, PropertyValue>;
-```
-
----
-
-### Example
-
-Text Widget
+Text:
 
 ```json
 {
-  "text": "Hello World"
+  "text": "Hello"
 }
 ```
 
-Button Widget
+Button:
 
 ```json
 {
-  "title": "Login",
-  "action": "login"
+  "title": "Login"
 }
 ```
 
-VStack
+VStack:
 
 ```json
 {
@@ -293,23 +384,25 @@ VStack
 
 ---
 
-### Requirements
+## Ownership
 
-* Dapat kosong
-* Harus serializable
-* Harus deterministic
+Definisi lengkap berada pada:
 
----
-
-## 6.4 Children
-
-### Purpose
-
-Menyimpan child node.
+```text
+property-system.md
+```
 
 ---
 
-### Definition
+# 11. Children
+
+## Purpose
+
+Menyimpan child nodes.
+
+---
+
+## Rust Model
 
 ```rust
 Vec<AstNode>
@@ -317,7 +410,7 @@ Vec<AstNode>
 
 ---
 
-### Example
+## Example
 
 ```text
 VStack
@@ -327,44 +420,18 @@ VStack
 
 Representasi:
 
-```json
-{
-  "type": "vstack",
-  "children": [
-    {
-      "type": "text"
-    },
-    {
-      "type": "button"
-    }
-  ]
-}
+```rust
+children: vec![
+    text_node,
+    button_node,
+]
 ```
 
 ---
 
-### Requirements
+# 12. Parent Child Relationship
 
-* Ordered
-* Recursive
-* Tidak boleh cyclic
-
----
-
-# 7. Parent Child Relationship
-
-AST menggunakan struktur tree.
-
-```text
-App
-│
-└── Screen
-     │
-     └── VStack
-          │
-          ├── Text
-          └── Button
-```
+AST menggunakan tree hierarchy.
 
 ---
 
@@ -375,20 +442,18 @@ Node hanya boleh memiliki satu parent.
 Valid:
 
 ```text
-A
-└── B
+App
+└── Screen
 ```
 
 Invalid:
 
 ```text
-A ──┐
-    │
-    ▼
-    B
-    ▲
-    │
-C ──┘
+App ──┐
+      ▼
+    Text
+      ▲
+Screen─┘
 ```
 
 ---
@@ -415,8 +480,8 @@ Node tidak boleh menjadi parent dirinya sendiri.
 Invalid:
 
 ```text
-A
-└── A
+Text
+└── Text
 ```
 
 ---
@@ -435,7 +500,19 @@ A
 
 ---
 
-# 8. MVP Node Hierarchy
+# 13. Node Categories
+
+AST mengenal tiga kategori node.
+
+```text
+NodeType
+│
+├── Root Nodes
+├── Layout Nodes
+└── Widget Nodes
+```
+
+---
 
 ## Root Nodes
 
@@ -468,85 +545,60 @@ TextField
 
 ---
 
-# 9. Example Tree Structures
+# 14. Example Hierarchies
 
-## Simple Layout
-
-```text
-VStack
-├── Text
-└── Button
-```
-
----
-
-## Nested Layout
-
-```text
-VStack
-├── Text
-├── HStack
-│    ├── Button
-│    └── Button
-└── Image
-```
-
----
-
-## Full Screen Example
+## Example 1
 
 ```text
 App
 └── Screen
      └── VStack
           ├── Text
-          ├── TextField
           └── Button
 ```
 
+Valid.
+
 ---
 
-# 10. JSON Representation
+## Example 2
 
-## Example AST
-
-```json
-{
-  "id": "node-1",
-  "node_type": "VStack",
-  "properties": {
-    "spacing": 16
-  },
-  "children": [
-    {
-      "id": "node-2",
-      "node_type": "Text",
-      "properties": {
-        "text": "Hello"
-      },
-      "children": []
-    },
-    {
-      "id": "node-3",
-      "node_type": "Button",
-      "properties": {
-        "title": "Login"
-      },
-      "children": []
-    }
-  ]
-}
+```text
+App
+└── Screen
+     └── ScrollView
+          └── VStack
+               ├── Image
+               ├── Text
+               └── Button
 ```
 
----
-
-# 11. Traversal Model
-
-Traversal default menggunakan Depth First Search (DFS).
+Valid.
 
 ---
 
-## Example Tree
+## Example 3
+
+```text
+App
+└── Screen
+     └── HStack
+          ├── Text
+          ├── Spacer
+          └── Button
+```
+
+Valid.
+
+---
+
+# 15. Traversal Model
+
+AST traversal menggunakan Depth First Search (DFS).
+
+---
+
+## Example
 
 ```text
 App
@@ -557,9 +609,7 @@ App
      └── Button
 ```
 
----
-
-## Traversal Order
+Traversal order:
 
 ```text
 App
@@ -570,24 +620,24 @@ Button
 
 ---
 
-## Why DFS?
+## Reasoning
 
 DFS dipilih karena:
 
-* Natural untuk UI tree
+* Natural untuk tree UI
 * Mudah digunakan generator
 * Memory footprint kecil
-* Deterministic
+* Predictable
 
 ---
 
-# 12. Visitor Pattern Support
+# 16. Visitor Pattern Integration
 
-Generator akan menggunakan Visitor Pattern.
+Traversal akan menggunakan Visitor Pattern.
 
 ---
 
-## Visitor Interface
+## Visitor Contract
 
 ```rust
 pub trait AstVisitor {
@@ -600,24 +650,21 @@ pub trait AstVisitor {
 
 ---
 
-## Traversal Example
-
-```rust
-tree.walk(visitor);
-```
-
----
-
-## Example Generator
+## Example Visitors
 
 ```text
 SwiftUIVisitor
 ComposeVisitor
+ValidationVisitor
 ```
 
 ---
 
-# 13. Validation Rules
+# 17. Validation Rules
+
+Validator wajib memeriksa:
+
+---
 
 ## Tree Rules
 
@@ -629,66 +676,48 @@ AstTree wajib memiliki root.
 
 ### Unique NodeId
 
-Seluruh node wajib memiliki ID unik.
+Semua NodeId harus unik.
 
 ---
 
-### No Circular Reference
+### No Cycles
 
-Tree harus acyclic.
+AST harus acyclic.
 
 ---
 
-## Widget Rules
+## Structural Rules
 
-### Text
+### Widget Nodes
 
-Required Property:
+Widget tidak boleh memiliki child.
 
-```json
-{
-  "text": "Hello"
-}
+Contoh:
+
+```text
+Text
+└── Button
 ```
 
----
-
-### Button
-
-Required Property:
-
-```json
-{
-  "title": "Login"
-}
-```
+Invalid.
 
 ---
-
-## Layout Rules
 
 ### Spacer
 
-Tidak boleh memiliki child.
-
-Valid:
-
-```text
-Spacer
-```
-
-Invalid:
-
-```text
-Spacer
-└── Text
-```
+Spacer tidak boleh memiliki child.
 
 ---
 
-# 14. Serialization Requirements
+### App
 
-AST wajib mendukung:
+App harus menjadi root node.
+
+---
+
+# 18. Serialization Requirements
+
+AST harus mendukung:
 
 ## Serialize
 
@@ -710,23 +739,33 @@ JSON → AST
 
 ---
 
-## Deterministic Output
+## Roundtrip Safety
 
-Output JSON harus konsisten.
+Berikut harus selalu benar:
 
-Input yang sama harus menghasilkan output yang sama.
+```text
+AST
+ ↓
+JSON
+ ↓
+AST
+```
+
+tanpa kehilangan informasi.
 
 ---
 
-# 15. Memory and Performance Considerations
+# 19. Performance Considerations
 
 Target MVP:
 
-* 100+ screens
-* 500+ widgets
-* 50+ navigation routes
+```text
+100+ screens
+500+ widgets
+50+ routes
+```
 
-AST traversal harus tetap:
+Traversal harus memiliki kompleksitas:
 
 ```text
 O(n)
@@ -740,27 +779,31 @@ n = total node count
 
 ---
 
-# 16. Future Extensions
+# 20. Future Extensions
 
-Node Model harus mendukung ekspansi tanpa breaking changes.
+AST Node Model harus mampu mendukung:
 
-## Future Layouts
+---
+
+## Additional Layouts
 
 ```text
 Grid
 LazyVStack
 LazyHStack
+ZStack
 ```
 
 ---
 
-## Future Widgets
+## Additional Widgets
 
 ```text
-List
 Toggle
 Slider
 Picker
+List
+Map
 ```
 
 ---
@@ -770,6 +813,7 @@ Picker
 ```text
 NavigationNode
 RouteNode
+TabNode
 ```
 
 ---
@@ -783,58 +827,36 @@ BindingNode
 
 ---
 
-# 17. Success Criteria
+# 21. Success Criteria
 
 AST Node Model dianggap berhasil apabila:
 
-* Seluruh widget MVP dapat direpresentasikan.
+* Mampu merepresentasikan seluruh widget MVP.
 * Mendukung nested hierarchy.
 * Mendukung DFS traversal.
 * Mendukung Visitor Pattern.
-* Mendukung JSON serialization.
-* Mendukung validation framework.
+* Mendukung serialization.
+* Mendukung validation.
 * Tidak mengandung platform-specific implementation.
 * Dapat digunakan oleh SwiftUI Generator.
 * Dapat digunakan oleh Compose Generator.
 
 ---
 
-# Appendix A – Class Diagram
+# 22. Guiding Principle
+
+Setiap elemen UI di RustyKrab harus direpresentasikan menggunakan satu model universal:
 
 ```text
-+-------------------+
-|      AstTree      |
-+-------------------+
-| root: AstNode     |
-+-------------------+
-
-          │
-          ▼
-
-+-------------------------+
-|        AstNode          |
-+-------------------------+
-| id: NodeId             |
-| node_type: NodeType    |
-| properties: Properties |
-| children: Vec<Node>    |
-+-------------------------+
-
-          │
-          ▼
-
-+-------------------+
-|     NodeType      |
-+-------------------+
-| App               |
-| Screen            |
-| VStack            |
-| HStack            |
-| ScrollView        |
-| Spacer            |
-| Text              |
-| Button            |
-| Image             |
-| TextField         |
-+-------------------+
+AstNode
 ```
+
+dengan perilaku yang ditentukan oleh:
+
+```text
+NodeType
+Properties
+Children
+```
+
+Pendekatan ini memungkinkan AST tetap sederhana, scalable, generator-friendly, dan sesuai dengan praktik yang digunakan oleh modern compiler dan UI framework architecture.

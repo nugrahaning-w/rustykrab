@@ -1,105 +1,80 @@
 # AST Design Principles
 
-Version: 1.0
-Project: RustyKrab
-Module: AST Engine
-Status: Draft
-Author: Aji Nugrahaning Widhi
-Last Updated: June 2026
+**Project:** RustyKrab
+**Module:** AST Engine
+**Document Type:** Architecture Specification
+**Version:** 1.0
+**Status:** Draft
+**Owner:** Core Framework Team
 
 ---
 
-# 1. Overview
+# 1. Purpose
 
-Abstract Syntax Tree (AST) adalah representasi internal platform-independent yang digunakan RustyKrab untuk menjembatani Rust UI DSL dengan generator platform native.
+Abstract Syntax Tree (AST) merupakan representasi internal yang digunakan RustyKrab untuk menjembatani Rust UI DSL dengan platform-specific code generators.
 
-AST merupakan fondasi utama compiler RustyKrab dan berfungsi sebagai kontrak antara DSL layer dan code generation layer.
+AST bertindak sebagai Intermediate Representation (IR) yang memisahkan proses:
 
-Semua UI yang ditulis menggunakan Rust DSL akan dikonversi menjadi AST sebelum menghasilkan source code SwiftUI maupun Jetpack Compose.
+* UI Definition
+* Validation
+* Code Generation
 
-AST memungkinkan RustyKrab mewujudkan prinsip utama:
+dari implementasi platform seperti SwiftUI dan Jetpack Compose.
+
+Dengan pendekatan ini, RustyKrab dapat menghasilkan source code native untuk berbagai platform dari satu definisi UI yang sama.
+
+---
+
+# 2. Architectural Vision
+
+RustyKrab dibangun berdasarkan prinsip:
 
 > Write Once. Generate Native.
 
+Developer mendefinisikan UI menggunakan Rust DSL.
+
+Compiler akan mengubah DSL menjadi AST yang bersifat platform-independent.
+
+Generator kemudian menerjemahkan AST menjadi source code native untuk platform target.
+
 ---
 
-# 2. Problem Statement
-
-Pengembangan aplikasi mobile native saat ini mengharuskan developer menulis UI dua kali:
-
-* SwiftUI untuk iOS
-* Jetpack Compose untuk Android
-
-Walaupun business logic dapat dibagikan, UI tetap harus diimplementasikan secara terpisah.
-
-RustyKrab menyelesaikan masalah ini dengan pendekatan:
+# 3. Architectural Context
 
 ```text
 Rust DSL
-    ↓
-AST
-    ↓
-SwiftUI
+    │
+    ▼
+Widget Tree
+    │
+    ▼
+AST (Intermediate Representation)
+    │
+    ├───────────────┐
+    │               │
+    ▼               ▼
+SwiftUI        Jetpack Compose
+Generator         Generator
+    │               │
+    ▼               ▼
+SwiftUI App    Android App
 ```
 
-dan
+AST merupakan satu-satunya format yang dipahami seluruh generator.
 
-```text
-Rust DSL
-    ↓
-AST
-    ↓
-Jetpack Compose
-```
+Generator tidak memiliki pengetahuan mengenai Rust DSL.
 
-Dengan AST sebagai intermediate representation, satu definisi UI dapat menghasilkan source code native untuk berbagai platform.
+Generator hanya memahami AST.
 
 ---
 
-# 3. AST Architectural Role
-
-AST berada di tengah compiler pipeline.
-
-```text
-┌──────────────────┐
-│    Rust DSL      │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│   Widget Tree    │
-└────────┬─────────┘
-         │
-         ▼
-┌──────────────────┐
-│       AST        │
-│ Platform Neutral │
-└──────┬─────┬─────┘
-       │     │
-       │     │
-       ▼     ▼
-┌──────────┐ ┌──────────┐
-│ SwiftUI  │ │ Compose  │
-│Generator │ │Generator │
-└────┬─────┘ └────┬─────┘
-     │            │
-     ▼            ▼
-┌──────────┐ ┌──────────┐
-│ iOS App  │ │AndroidApp│
-└──────────┘ └──────────┘
-```
-
-AST menjadi satu-satunya representasi UI yang dipahami seluruh generator.
-
----
-
-# 4. Responsibilities
+# 4. Core Responsibilities
 
 AST bertanggung jawab untuk:
 
 ## 4.1 Represent UI Structure
 
-AST harus mampu merepresentasikan struktur UI.
+AST harus mampu merepresentasikan struktur UI secara lengkap.
 
 Contoh:
 
@@ -111,7 +86,7 @@ VStack
 
 ---
 
-## 4.2 Store Widget Configuration
+## 4.2 Store UI Configuration
 
 AST menyimpan seluruh konfigurasi widget.
 
@@ -119,7 +94,7 @@ Contoh:
 
 ```json
 {
-  "type": "text",
+  "type": "Text",
   "properties": {
     "text": "Hello World"
   }
@@ -128,21 +103,36 @@ Contoh:
 
 ---
 
-## 4.3 Provide Generator Input
+## 4.3 Support Validation
 
-SwiftUI Generator dan Compose Generator menerima AST sebagai input utama.
+AST menjadi input utama Validation Framework.
+
+Validator akan memeriksa:
+
+* Hierarchy validity
+* Required properties
+* Structural correctness
 
 ---
 
-## 4.4 Support Validation
+## 4.4 Support Traversal
 
-AST menjadi objek yang divalidasi sebelum proses code generation.
+AST harus dapat ditraverse secara deterministik menggunakan Visitor Pattern.
 
 ---
 
-## 4.5 Support Traversal
+## 4.5 Support Code Generation
 
-AST harus dapat ditraverse menggunakan Visitor Pattern.
+AST menjadi input utama seluruh generator.
+
+Contoh:
+
+```text
+AST
+ ├── SwiftUI Generator
+ ├── Compose Generator
+ └── Future Generators
+```
 
 ---
 
@@ -150,7 +140,7 @@ AST harus dapat ditraverse menggunakan Visitor Pattern.
 
 AST tidak bertanggung jawab untuk:
 
-## 5.1 Rendering UI
+## 5.1 UI Rendering
 
 AST bukan rendering engine.
 
@@ -158,119 +148,130 @@ AST hanya menyimpan representasi data.
 
 ---
 
-## 5.2 Runtime State
+## 5.2 Runtime Execution
 
-AST tidak menyimpan state runtime.
+AST tidak menjalankan kode aplikasi.
 
 Contoh yang tidak diperbolehkan:
+
+```rust
+login();
+```
+
+---
+
+## 5.3 State Management
+
+AST tidak menyimpan runtime state.
+
+Contoh:
 
 ```rust
 counter += 1;
 ```
 
-State Management akan ditangani oleh modul lain.
+tidak boleh menjadi bagian AST.
 
 ---
 
-## 5.3 Business Logic
+## 5.4 Platform APIs
 
-AST tidak menyimpan implementasi business logic.
+AST tidak boleh memiliki ketergantungan terhadap:
 
-Contoh:
-
-```rust
-login_user();
-```
-
-Tidak boleh berada di dalam AST.
+* UIKit
+* SwiftUI
+* Android SDK
+* Jetpack Compose
+* AppKit
 
 ---
 
-## 5.4 Platform API Access
+# 6. Design Principles
 
-AST tidak berinteraksi langsung dengan:
+## 6.1 Platform Independence
 
-* Camera
-* Bluetooth
-* Push Notification
-* Device Storage
+AST harus sepenuhnya platform-agnostic.
 
----
-
-# 6. Design Goals
-
-## 6.1 Platform Independent
-
-AST tidak boleh mengandung konsep spesifik platform.
-
-Contoh yang dilarang:
+AST tidak boleh mengandung:
 
 ```swift
-NavigationStack
+Text("Hello")
 ```
 
+atau
+
 ```kotlin
-NavHost
+Text("Hello")
 ```
 
 AST hanya menyimpan:
 
 ```json
 {
-  "type": "navigation"
-}
-```
-
-Generator yang menentukan implementasi platform.
-
----
-
-## 6.2 Serializable
-
-AST harus dapat diserialisasi ke JSON.
-
-Tujuan:
-
-* Snapshot Testing
-* Debugging
-* Build Cache
-* Tooling Support
-
-Contoh:
-
-```json
-{
-  "type": "text",
+  "type": "Text",
   "properties": {
     "text": "Hello"
   }
 }
 ```
 
+Generator bertanggung jawab menerjemahkan representasi tersebut ke platform target.
+
 ---
 
-## 6.3 Generator Friendly
+## 6.2 Single Source of Truth
 
-AST harus mudah diproses oleh generator.
+AST harus menjadi satu-satunya representasi UI yang digunakan setelah proses parsing selesai.
 
-Karakteristik:
-
-* Deterministic
-* Predictable
-* Tree-based
-* Traversable
-
-Target:
+Setelah Widget Tree dikonversi menjadi AST:
 
 ```text
-Traversal Complexity = O(n)
+Widget Tree
+     ↓
+AST
 ```
+
+seluruh proses berikutnya harus bekerja menggunakan AST.
 
 ---
 
-## 6.4 Extensible
+## 6.3 Deterministic Representation
 
-AST harus mendukung penambahan node baru tanpa perubahan besar.
+Input yang sama harus selalu menghasilkan AST yang sama.
+
+Contoh:
+
+```rust
+Text::new("Hello")
+```
+
+harus menghasilkan struktur AST yang identik pada setiap build.
+
+---
+
+## 6.4 Serializable
+
+AST harus dapat diubah menjadi format serialisasi.
+
+Target awal:
+
+```text
+JSON
+```
+
+Kegunaan:
+
+* Snapshot Testing
+* Debugging
+* Tooling
+* Build Cache
+* Future Compiler Optimization
+
+---
+
+## 6.5 Extensibility
+
+AST harus memungkinkan penambahan node baru tanpa perubahan besar pada arsitektur inti.
 
 MVP:
 
@@ -284,118 +285,73 @@ TextField
 Future:
 
 ```text
-List
 Grid
-LazyStack
-TabView
+List
+Navigation
 Map
+Video
+TabView
 ```
+
+Penambahan node baru tidak boleh mengubah struktur fundamental AST.
 
 ---
 
-## 6.5 Testable
+## 6.6 Generator Friendly
 
-AST harus mudah diuji.
+AST harus mudah diproses oleh generator.
 
-Jenis testing:
+Karakteristik:
 
-* Unit Test
-* Integration Test
-* Snapshot Test
+* Tree-based
+* Recursive
+* Predictable
+* Stable
 
----
-
-## 6.6 Maintainable
-
-Perubahan generator tidak boleh memerlukan perubahan AST yang signifikan.
-
-AST harus stabil sebagai kontrak antar modul.
+Generator tidak boleh membutuhkan knowledge terhadap DSL.
 
 ---
 
-# 7. Design Constraints
+## 6.7 Validation First
 
-## 7.1 No Platform Specific Data
+AST wajib divalidasi sebelum code generation.
 
-AST tidak boleh menyimpan:
-
-```swift
-Text("Hello")
-```
-
-atau
-
-```kotlin
-Text("Hello")
-```
-
-AST hanya menyimpan bentuk netral:
-
-```json
-{
-  "type": "text",
-  "text": "Hello"
-}
-```
-
----
-
-## 7.2 No Runtime Execution
-
-AST tidak boleh menjalankan kode.
-
-Contoh yang dilarang:
-
-```rust
-fn on_click() {
-    login();
-}
-```
-
-Yang boleh:
-
-```json
-{
-  "action": "login"
-}
-```
-
----
-
-## 7.3 No Circular Reference
-
-AST harus selalu berupa tree.
-
-Valid:
+Pipeline:
 
 ```text
-A
-└── B
+DSL
+ ↓
+AST
+ ↓
+Validation
+ ↓
+Generator
 ```
 
-Invalid:
-
-```text
-A
-└── B
-     └── A
-```
+Generator tidak bertanggung jawab memperbaiki AST yang invalid.
 
 ---
 
-## 7.4 Immutable By Default
+## 6.8 Immutability By Design
 
-Setelah AST dihasilkan, node tidak boleh dimodifikasi secara langsung.
+AST dianggap immutable setelah dibuat.
 
-Transformasi dilakukan dengan membuat AST baru.
+Perubahan AST dilakukan melalui transformasi dan menghasilkan tree baru.
+
+Hal ini mempermudah:
+
+* Debugging
+* Snapshot Testing
+* Compiler Optimization
+* Future Parallel Processing
 
 ---
 
-# 8. AST Lifecycle
+# 7. AST Lifecycle
 
-## Step 1 – Developer Writes DSL
+## Phase 1 — DSL Authoring
 
-Developer menulis UI menggunakan Rust DSL.
+Developer menulis Rust DSL.
 
 ```rust
 VStack::new()
@@ -405,9 +361,9 @@ VStack::new()
 
 ---
 
-## Step 2 – Widget Tree Creation
+## Phase 2 — Widget Tree Construction
 
-Compiler membangun widget tree.
+Compiler membangun Widget Tree.
 
 ```text
 VStack
@@ -417,40 +373,45 @@ VStack
 
 ---
 
-## Step 3 – AST Generation
+## Phase 3 — AST Construction
 
-Widget tree dikonversi menjadi AST.
+Widget Tree dikonversi menjadi AST.
 
-```json
-{
-  "type": "vstack",
-  "children": [
-    {
-      "type": "text"
-    },
-    {
-      "type": "button"
-    }
-  ]
-}
+```text
+AstTree
+└── VStack
+    ├── Text
+    └── Button
 ```
 
 ---
 
-## Step 4 – Validation
+## Phase 4 — Validation
 
-Validator memeriksa:
+Validation Framework memverifikasi:
 
+* Node hierarchy
 * Required properties
-* Invalid hierarchy
-* Missing node types
-* Unsupported configuration
+* Structural rules
 
 ---
 
-## Step 5 – Code Generation
+## Phase 5 — Traversal
 
-AST digunakan oleh generator.
+Visitor melakukan traversal AST.
+
+```text
+App
+VStack
+Text
+Button
+```
+
+---
+
+## Phase 6 — Code Generation
+
+Generator menghasilkan source code native.
 
 SwiftUI:
 
@@ -476,45 +437,58 @@ Column {
 
 ---
 
-# 9. AST Quality Attributes
+# 8. Quality Attributes
 
-## Correctness
+## Maintainability
 
-AST harus merepresentasikan UI dengan akurat.
-
----
-
-## Consistency
-
-Node dengan tipe yang sama harus memiliki struktur yang konsisten.
-
----
-
-## Determinism
-
-Input yang sama harus menghasilkan AST yang sama.
-
----
-
-## Stability
-
-Generator dapat bergantung pada struktur AST yang stabil.
+AST harus mudah dipahami dan dipelihara.
 
 ---
 
 ## Scalability
 
-Target MVP:
+Target awal:
 
-* 100+ screens
-* 500+ widgets
-* 50+ routes
+* 100+ Screens
+* 500+ Widgets
+* 50+ Routes
 
 ---
 
-# 10. Future Evolution
+## Testability
 
-AST dirancang agar dapat berkembang untuk:
+AST harus mendukung:
+
+* Unit Test
+* Integration Test
+* Snapshot Test
+
+---
+
+## Predictability
+
+Traversal dan generation harus menghasilkan output yang konsisten.
+
+---
+
+## Stability
+
+Generator dapat bergantung pada kontrak AST yang stabil.
+
+---
+
+# 9. Future Evolution
+
+AST dirancang untuk mendukung ekspansi berikut:
+
+## Navigation System
+
+```text
+NavigationNode
+RouteNode
+```
+
+---
 
 ## State Management
 
@@ -525,33 +499,7 @@ BindingNode
 
 ---
 
-## Navigation
-
-```text
-NavigationNode
-RouteNode
-```
-
----
-
-## Native APIs
-
-```text
-StorageNode
-NetworkNode
-```
-
----
-
-## Web Support
-
-```text
-HTML Generator
-```
-
----
-
-## Desktop Support
+## Desktop Platforms
 
 ```text
 SwiftUI macOS
@@ -560,29 +508,47 @@ Compose Desktop
 
 ---
 
-# 11. Success Criteria
+## Web Platforms
 
-AST dianggap berhasil apabila:
-
-* Merepresentasikan seluruh widget MVP.
-* Dapat digunakan oleh SwiftUI Generator.
-* Dapat digunakan oleh Compose Generator.
-* Tidak mengandung platform-specific implementation.
-* Mendukung JSON serialization.
-* Mendukung validation framework.
-* Mendukung visitor traversal.
-* Mendukung extensibility tanpa breaking changes.
+```text
+HTML Generator
+```
 
 ---
 
-# 12. Guiding Principle
+## Additional Native Targets
+
+```text
+React Native
+Flutter
+```
+
+---
+
+# 10. Success Criteria
+
+AST Architecture dianggap berhasil apabila:
+
+* Mampu merepresentasikan seluruh widget MVP.
+* Tidak mengandung platform-specific implementation.
+* Mendukung serialization.
+* Mendukung validation framework.
+* Mendukung visitor traversal.
+* Mendukung code generation.
+* Mendukung extensibility tanpa breaking changes.
+* Dapat digunakan oleh SwiftUI Generator.
+* Dapat digunakan oleh Compose Generator.
+
+---
+
+# 11. Guiding Principle
 
 AST bukan representasi SwiftUI.
 
-AST bukan representasi Compose.
+AST bukan representasi Jetpack Compose.
 
 AST bukan rendering engine.
 
-AST adalah representasi UI universal yang menjadi bahasa bersama antara Rust DSL dan seluruh code generator RustyKrab.
+AST adalah bahasa universal yang menjadi kontrak antara Rust DSL dan seluruh generator.
 
 > Write Once. Generate Native.

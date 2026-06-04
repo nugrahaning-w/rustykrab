@@ -1,53 +1,87 @@
 # Node Types Specification
 
-Version: 1.0
-Project: RustyKrab
-Module: AST Engine
-Status: Draft
-Author: Aji Nugrahaning Widhi
-Last Updated: June 2026
+**Project:** RustyKrab
+**Module:** AST Engine
+**Document Type:** Architecture Specification
+**Version:** 1.0
+**Status:** Draft
+**Owner:** Core Framework Team
 
 ---
 
-# 1. Overview
+# 1. Purpose
 
-Dokumen ini mendefinisikan seluruh jenis node (`NodeType`) yang didukung oleh RustyKrab AST.
+Dokumen ini mendefinisikan seluruh NodeType yang digunakan dalam RustyKrab AST.
 
-NodeType digunakan untuk mengidentifikasi fungsi dan perilaku setiap node dalam AST.
+NodeType merupakan identitas dari setiap AstNode dan digunakan untuk menentukan:
 
-Dokumen ini menjadi referensi utama untuk:
+* Jenis elemen UI
+* Aturan hierarchy
+* Valid parent-child relationship
+* Validation rules
+* Generator behavior
 
-* AST Engine
-* Validation Framework
-* SwiftUI Generator
-* Compose Generator
-* Future Extensions
+NodeType menjadi kontrak utama antara:
+
+```text
+AST
+ ↓
+Validator
+ ↓
+Visitor
+ ↓
+SwiftUI Generator
+ ↓
+Compose Generator
+```
+
+Perubahan pada NodeType dianggap sebagai perubahan kontrak AST dan harus dilakukan secara hati-hati.
 
 ---
 
-# 2. Objectives
+# 2. Design Goals
 
-Tujuan utama NodeType System:
+NodeType System dirancang untuk:
 
-* Mengidentifikasi jenis node dalam AST
-* Menentukan hierarchy rules
-* Menentukan valid parent-child relationship
-* Menentukan property requirements
-* Menyediakan kontrak yang stabil untuk generator
+## Platform Independent
+
+Tidak merepresentasikan implementasi SwiftUI maupun Compose.
+
+---
+
+## Extensible
+
+Node baru dapat ditambahkan tanpa mengubah struktur fundamental AST.
+
+---
+
+## Predictable
+
+Setiap NodeType memiliki aturan hierarchy yang jelas.
+
+---
+
+## Generator Friendly
+
+Generator dapat menghasilkan source code berdasarkan NodeType tanpa knowledge terhadap DSL.
+
+---
+
+## Validation Friendly
+
+Validator dapat menentukan apakah tree valid berdasarkan kombinasi NodeType.
 
 ---
 
 # 3. Node Categories
 
-RustyKrab MVP memiliki tiga kategori node.
+NodeType dibagi menjadi tiga kategori utama.
 
 ```text
 NodeType
 │
 ├── Root Nodes
-│
 ├── Layout Nodes
-│
 └── Widget Nodes
 ```
 
@@ -55,31 +89,40 @@ NodeType
 
 # 4. Root Nodes
 
-Root node berada di level tertinggi AST.
+Root Nodes merupakan node level tertinggi dalam tree.
 
 ---
 
-## 4.1 App
-
-### Purpose
-
-Representasi aplikasi.
-
-Merupakan root utama dari seluruh AST.
-
----
-
-### Example
+## Root Hierarchy
 
 ```text
 App
+│
+└── Screen
 ```
 
 ---
 
-### Allowed Parent
+# 4.1 App
 
-Tidak memiliki parent.
+## Purpose
+
+Representasi aplikasi.
+
+Merupakan root utama AST.
+
+---
+
+## Responsibilities
+
+* Menjadi root tree
+* Menjadi entry point traversal
+* Menjadi entry point validation
+* Menjadi entry point generator
+
+---
+
+## Allowed Parent
 
 ```text
 None
@@ -87,7 +130,7 @@ None
 
 ---
 
-### Allowed Children
+## Allowed Children
 
 ```text
 Screen
@@ -95,28 +138,21 @@ Screen
 
 ---
 
-### Required Properties
+## Required Properties
 
 Tidak ada.
 
 ---
 
-### Validation Rules
+## Validation Rules
 
-* Hanya boleh muncul sekali dalam satu AstTree.
 * Harus menjadi root node.
+* Tidak boleh memiliki parent.
+* Hanya boleh muncul satu kali dalam satu AstTree.
 
 ---
 
-## 4.2 Screen
-
-### Purpose
-
-Representasi sebuah halaman aplikasi.
-
----
-
-### Example
+## Example
 
 ```text
 App
@@ -125,7 +161,22 @@ App
 
 ---
 
-### Allowed Parent
+# 4.2 Screen
+
+## Purpose
+
+Representasi sebuah halaman aplikasi.
+
+---
+
+## Responsibilities
+
+* Menjadi container utama UI screen.
+* Menjadi boundary generation unit.
+
+---
+
+## Allowed Parent
 
 ```text
 App
@@ -133,7 +184,7 @@ App
 
 ---
 
-### Allowed Children
+## Allowed Children
 
 ```text
 VStack
@@ -143,34 +194,110 @@ ScrollView
 
 ---
 
-### Required Properties
+## Required Properties
 
 Tidak ada.
 
 ---
 
-### Validation Rules
+## Validation Rules
 
-* Wajib memiliki parent App.
-* Tidak boleh menjadi root.
+* Harus memiliki parent App.
+* Tidak boleh menjadi root node.
+
+---
+
+## Example
+
+```text
+App
+└── Screen
+     └── VStack
+```
 
 ---
 
 # 5. Layout Nodes
 
-Layout nodes bertanggung jawab mengatur posisi child node.
+Layout nodes bertanggung jawab mengatur posisi dan struktur child node.
 
 ---
 
-## 5.1 VStack
+# Layout Hierarchy
 
-### Purpose
+```text
+Layout
+│
+├── VStack
+├── HStack
+├── ScrollView
+└── Spacer
+```
+
+---
+
+# 5.1 VStack
+
+## Purpose
 
 Menyusun child secara vertikal.
 
 ---
 
-### Example
+## Generator Mapping
+
+SwiftUI:
+
+```swift
+VStack
+```
+
+Compose:
+
+```kotlin
+Column
+```
+
+---
+
+## Allowed Parent
+
+```text
+Screen
+VStack
+HStack
+ScrollView
+```
+
+---
+
+## Allowed Children
+
+```text
+Any Layout Node
+Any Widget Node
+```
+
+---
+
+## Optional Properties
+
+```text
+spacing
+padding
+alignment
+```
+
+---
+
+## Validation Rules
+
+* Boleh memiliki child 0 atau lebih.
+* Child harus valid NodeType.
+
+---
+
+## Example
 
 ```text
 VStack
@@ -180,68 +307,31 @@ VStack
 
 ---
 
-### Allowed Parent
+# 5.2 HStack
 
-```text
-Screen
-VStack
-HStack
-ScrollView
-```
-
----
-
-### Allowed Children
-
-```text
-Any Layout
-Any Widget
-```
-
----
-
-### Required Properties
-
-Tidak ada.
-
----
-
-### Optional Properties
-
-```text
-spacing
-padding
-alignment
-```
-
----
-
-### Validation Rules
-
-* Boleh memiliki child 0 atau lebih.
-* Child harus valid NodeType.
-
----
-
-## 5.2 HStack
-
-### Purpose
+## Purpose
 
 Menyusun child secara horizontal.
 
 ---
 
-### Example
+## Generator Mapping
 
-```text
+SwiftUI:
+
+```swift
 HStack
-├── Button
-└── Button
+```
+
+Compose:
+
+```kotlin
+Row
 ```
 
 ---
 
-### Allowed Parent
+## Allowed Parent
 
 ```text
 Screen
@@ -252,16 +342,16 @@ ScrollView
 
 ---
 
-### Allowed Children
+## Allowed Children
 
 ```text
-Any Layout
-Any Widget
+Any Layout Node
+Any Widget Node
 ```
 
 ---
 
-### Optional Properties
+## Optional Properties
 
 ```text
 spacing
@@ -271,30 +361,41 @@ alignment
 
 ---
 
-### Validation Rules
+## Example
 
-Sama seperti VStack.
+```text
+HStack
+├── Text
+└── Button
+```
 
 ---
 
-## 5.3 ScrollView
+# 5.3 ScrollView
 
-### Purpose
+## Purpose
 
 Container yang dapat di-scroll.
 
 ---
 
-### Example
+## Generator Mapping
 
-```text
+SwiftUI:
+
+```swift
 ScrollView
-└── VStack
+```
+
+Compose:
+
+```kotlin
+LazyColumn
 ```
 
 ---
 
-### Allowed Parent
+## Allowed Parent
 
 ```text
 Screen
@@ -304,16 +405,16 @@ HStack
 
 ---
 
-### Allowed Children
+## Allowed Children
 
 ```text
-Any Layout
-Any Widget
+Any Layout Node
+Any Widget Node
 ```
 
 ---
 
-### Optional Properties
+## Optional Properties
 
 ```text
 axis
@@ -322,21 +423,69 @@ shows_indicator
 
 ---
 
-### Validation Rules
+## Validation Rules
 
-* Minimal memiliki satu child.
-
----
-
-## 5.4 Spacer
-
-### Purpose
-
-Flexible spacing.
+Minimal memiliki satu child.
 
 ---
 
-### Example
+## Example
+
+```text
+ScrollView
+└── VStack
+```
+
+---
+
+# 5.4 Spacer
+
+## Purpose
+
+Flexible spacing element.
+
+---
+
+## Generator Mapping
+
+SwiftUI:
+
+```swift
+Spacer()
+```
+
+Compose:
+
+```kotlin
+Spacer()
+```
+
+---
+
+## Allowed Parent
+
+```text
+VStack
+HStack
+```
+
+---
+
+## Allowed Children
+
+```text
+None
+```
+
+---
+
+## Validation Rules
+
+Tidak boleh memiliki child.
+
+---
+
+## Example
 
 ```text
 HStack
@@ -347,71 +496,50 @@ HStack
 
 ---
 
-### Allowed Parent
-
-```text
-VStack
-HStack
-```
-
----
-
-### Allowed Children
-
-```text
-None
-```
-
----
-
-### Required Properties
-
-Tidak ada.
-
----
-
-### Validation Rules
-
-Spacer tidak boleh memiliki child.
-
-Valid:
-
-```text
-Spacer
-```
-
-Invalid:
-
-```text
-Spacer
-└── Text
-```
-
----
-
 # 6. Widget Nodes
 
-Widget node adalah elemen UI yang dapat dilihat user.
+Widget nodes merupakan elemen UI yang terlihat oleh user.
 
 ---
 
-## 6.1 Text
+# Widget Hierarchy
 
-### Purpose
+```text
+Widget
+│
+├── Text
+├── Button
+├── Image
+└── TextField
+```
+
+---
+
+# 6.1 Text
+
+## Purpose
 
 Menampilkan teks.
 
 ---
 
-### Example
+## Generator Mapping
 
-```text
-Text
+SwiftUI:
+
+```swift
+Text("Hello")
+```
+
+Compose:
+
+```kotlin
+Text("Hello")
 ```
 
 ---
 
-### Allowed Parent
+## Allowed Parent
 
 ```text
 VStack
@@ -421,7 +549,7 @@ ScrollView
 
 ---
 
-### Allowed Children
+## Allowed Children
 
 ```text
 None
@@ -429,7 +557,7 @@ None
 
 ---
 
-### Required Properties
+## Required Properties
 
 ```text
 text
@@ -437,7 +565,7 @@ text
 
 ---
 
-### Optional Properties
+## Optional Properties
 
 ```text
 font_size
@@ -447,29 +575,37 @@ color
 
 ---
 
-### Validation Rules
+## Validation Rules
 
-Property text wajib ada.
-
----
-
-## 6.2 Button
-
-### Purpose
-
-Tombol aksi.
+Property `text` wajib tersedia.
 
 ---
 
-### Example
+# 6.2 Button
 
-```text
-Button
+## Purpose
+
+Menampilkan tombol aksi.
+
+---
+
+## Generator Mapping
+
+SwiftUI:
+
+```swift
+Button("Login")
+```
+
+Compose:
+
+```kotlin
+Button()
 ```
 
 ---
 
-### Allowed Parent
+## Allowed Parent
 
 ```text
 VStack
@@ -479,7 +615,7 @@ ScrollView
 
 ---
 
-### Allowed Children
+## Allowed Children
 
 ```text
 None
@@ -487,7 +623,7 @@ None
 
 ---
 
-### Required Properties
+## Required Properties
 
 ```text
 title
@@ -495,38 +631,47 @@ title
 
 ---
 
-### Optional Properties
+## Optional Properties
 
 ```text
 action
 style
+enabled
 ```
 
 ---
 
-### Validation Rules
+## Validation Rules
 
-title wajib ada.
+Property `title` wajib tersedia.
 
 ---
 
-## 6.3 Image
+# 6.3 Image
 
-### Purpose
+## Purpose
 
 Menampilkan gambar.
 
 ---
 
-### Example
+## Generator Mapping
 
-```text
-Image
+SwiftUI:
+
+```swift
+Image(...)
+```
+
+Compose:
+
+```kotlin
+Image(...)
 ```
 
 ---
 
-### Allowed Parent
+## Allowed Parent
 
 ```text
 VStack
@@ -536,7 +681,7 @@ ScrollView
 
 ---
 
-### Allowed Children
+## Allowed Children
 
 ```text
 None
@@ -544,7 +689,7 @@ None
 
 ---
 
-### Required Properties
+## Required Properties
 
 ```text
 source
@@ -552,7 +697,7 @@ source
 
 ---
 
-### Optional Properties
+## Optional Properties
 
 ```text
 width
@@ -562,29 +707,37 @@ content_mode
 
 ---
 
-### Validation Rules
+## Validation Rules
 
-source wajib ada.
+Property `source` wajib tersedia.
 
 ---
 
-## 6.4 TextField
+# 6.4 TextField
 
-### Purpose
+## Purpose
 
 Input teks.
 
 ---
 
-### Example
+## Generator Mapping
 
-```text
-TextField
+SwiftUI:
+
+```swift
+TextField(...)
+```
+
+Compose:
+
+```kotlin
+TextField(...)
 ```
 
 ---
 
-### Allowed Parent
+## Allowed Parent
 
 ```text
 VStack
@@ -594,7 +747,7 @@ ScrollView
 
 ---
 
-### Allowed Children
+## Allowed Children
 
 ```text
 None
@@ -602,7 +755,7 @@ None
 
 ---
 
-### Required Properties
+## Required Properties
 
 ```text
 placeholder
@@ -610,24 +763,25 @@ placeholder
 
 ---
 
-### Optional Properties
+## Optional Properties
 
 ```text
 binding
 keyboard_type
+secure
 ```
 
 ---
 
-### Validation Rules
+## Validation Rules
 
-placeholder wajib ada.
+Property `placeholder` wajib tersedia.
 
 ---
 
-# 7. NodeType Enum
+# 7. NodeType Enumeration
 
-Implementasi awal.
+Implementasi awal NodeType.
 
 ```rust
 pub enum NodeType {
@@ -648,7 +802,7 @@ pub enum NodeType {
 
 ---
 
-# 8. Parent-Child Hierarchy Matrix
+# 8. Parent-Child Matrix
 
 | Parent     | Allowed Children           |
 | ---------- | -------------------------- |
@@ -766,41 +920,43 @@ App hanya boleh memiliki Screen.
 
 ---
 
-# 11. Validation Rules
+# 11. Validation Requirements
 
 Validator wajib memeriksa:
 
-### Rule 1
+---
+
+## Rule 1
 
 NodeType harus valid.
 
 ---
 
-### Rule 2
+## Rule 2
 
 Parent-child relationship harus valid.
 
 ---
 
-### Rule 3
+## Rule 3
 
 Required property harus tersedia.
 
 ---
 
-### Rule 4
+## Rule 4
 
 Widget node tidak boleh memiliki child.
 
 ---
 
-### Rule 5
+## Rule 5
 
 Spacer tidak boleh memiliki child.
 
 ---
 
-### Rule 6
+## Rule 6
 
 App harus menjadi root node.
 
@@ -808,7 +964,7 @@ App harus menjadi root node.
 
 # 12. Future Node Types
 
-NodeType berikut direncanakan untuk versi berikutnya.
+Node berikut direncanakan untuk versi berikutnya.
 
 ---
 
@@ -846,7 +1002,7 @@ TabView
 
 ---
 
-## State
+## State Management
 
 ```text
 StateNode
@@ -855,22 +1011,41 @@ BindingNode
 
 ---
 
-# 13. Success Criteria
+# 13. Versioning Strategy
+
+NodeType baru dapat ditambahkan.
+
+NodeType yang sudah dirilis tidak boleh dihapus tanpa migration path.
+
+Hal ini menjaga kompatibilitas AST terhadap generator lama.
+
+---
+
+# 14. Success Criteria
 
 NodeType System dianggap berhasil apabila:
 
 * Seluruh widget MVP terdefinisi.
 * Seluruh layout MVP terdefinisi.
 * Parent-child hierarchy tervalidasi.
-* Dapat digunakan oleh Validation Framework.
-* Dapat digunakan oleh SwiftUI Generator.
-* Dapat digunakan oleh Compose Generator.
-* Mendukung penambahan node baru tanpa breaking changes.
+* Generator dapat melakukan mapping ke SwiftUI.
+* Generator dapat melakukan mapping ke Compose.
+* Mendukung ekspansi tanpa breaking changes.
 
 ---
 
-# 14. Guiding Principle
+# 15. Guiding Principle
 
-Setiap NodeType harus merepresentasikan konsep UI yang bersifat universal dan tidak bergantung pada implementasi platform tertentu.
+NodeType merepresentasikan konsep UI universal, bukan implementasi framework tertentu.
 
-NodeType bukan representasi SwiftUI maupun Jetpack Compose, melainkan representasi abstrak yang dapat diterjemahkan ke berbagai platform native.
+Generator bertanggung jawab menerjemahkan NodeType menjadi kode native.
+
+```text
+NodeType
+     ↓
+Generator
+     ↓
+SwiftUI / Compose
+```
+
+Dengan demikian AST tetap stabil, extensible, dan platform-independent sepanjang siklus hidup RustyKrab.

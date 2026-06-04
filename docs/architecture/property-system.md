@@ -1,73 +1,64 @@
 # Property System Specification
 
-Version: 1.0
-Project: RustyKrab
-Module: AST Engine
-Status: Draft
-Author: Aji Nugrahaning Widhi
-Last Updated: June 2026
+**Project:** RustyKrab
+**Module:** AST Engine
+**Document Type:** Architecture Specification
+**Version:** 1.0
+**Status:** Draft
+**Owner:** Core Framework Team
 
 ---
 
-# 1. Overview
+# 1. Purpose
 
-Property System adalah mekanisme yang digunakan AST untuk menyimpan konfigurasi setiap node.
+Property System merupakan mekanisme yang digunakan RustyKrab AST untuk menyimpan konfigurasi setiap node.
 
-Semua informasi yang diperlukan generator untuk menghasilkan source code native disimpan dalam property.
+AST bertanggung jawab merepresentasikan struktur UI.
+
+Property System bertanggung jawab merepresentasikan konfigurasi UI.
 
 Contoh:
 
+```text
+AST Structure
+└── Text
+
+Property System
+└── text = "Hello World"
+```
+
+Property System menjadi kontrak utama antara:
+
+```text
 Rust DSL
-
-```rust
-Text::new("Hello World")
-```
-
+     ↓
 AST
-
-```json
-{
-  "type": "Text",
-  "properties": {
-    "text": "Hello World"
-  }
-}
+     ↓
+Property System
+     ↓
+Generator
 ```
 
-SwiftUI Generator
+Generator tidak memahami Rust DSL.
 
-```swift
-Text("Hello World")
-```
+Generator hanya membaca:
 
-Compose Generator
+* NodeType
+* Properties
 
-```kotlin
-Text("Hello World")
-```
-
-Property System menjadi kontrak utama antara AST dan Code Generator.
+untuk menghasilkan source code platform target.
 
 ---
 
-# 2. Objectives
+# 2. Design Goals
 
-Property System harus:
-
-* Platform Independent
-* Serializable
-* Extensible
-* Type Safe
-* Generator Friendly
-* Backward Compatible
+Property System harus memenuhi karakteristik berikut:
 
 ---
 
-# 3. Design Principles
+## Platform Independent
 
-## Platform Neutral
-
-Property tidak boleh mengandung implementasi SwiftUI maupun Compose.
+Property tidak boleh menyimpan informasi spesifik platform.
 
 Invalid:
 
@@ -91,13 +82,7 @@ Generator bertanggung jawab melakukan mapping.
 
 ## Serializable
 
-Seluruh property harus dapat diubah menjadi JSON.
-
----
-
-## Extensible
-
-Node baru dapat menambahkan property baru tanpa mengubah arsitektur inti.
+Property harus dapat diubah menjadi JSON.
 
 ---
 
@@ -107,15 +92,54 @@ Input yang sama harus menghasilkan property yang sama.
 
 ---
 
-# 4. Property Model
+## Extensible
 
-## Properties
-
-Properties merupakan kumpulan key-value yang dimiliki sebuah node.
+Property baru dapat ditambahkan tanpa mengubah struktur inti AST.
 
 ---
 
-### Rust Definition
+## Generator Friendly
+
+Generator harus dapat membaca property secara langsung tanpa transformasi kompleks.
+
+---
+
+# 3. Property System Architecture
+
+Property System terdiri dari:
+
+```text
+Properties
+│
+└── PropertyValue
+```
+
+---
+
+## Architecture Diagram
+
+```text
+AstNode
+│
+├── NodeType
+├── Properties
+│    ├── key
+│    └── PropertyValue
+│
+└── Children
+```
+
+---
+
+# 4. Properties
+
+## Purpose
+
+Properties merupakan kumpulan konfigurasi yang dimiliki sebuah node.
+
+---
+
+## Rust Definition
 
 ```rust
 pub type Properties =
@@ -124,20 +148,33 @@ HashMap<String, PropertyValue>;
 
 ---
 
-### Example
+## Example
 
 ```json
 {
-  "text": "Hello",
+  "text": "Hello World",
   "font_size": 18
 }
 ```
 
 ---
 
+## Responsibilities
+
+Properties bertanggung jawab untuk:
+
+* Menyimpan konfigurasi UI
+* Menyimpan metadata generator
+* Menjadi input validator
+* Menjadi input generator
+
+---
+
 # 5. PropertyValue
 
-PropertyValue adalah tipe data universal yang digunakan AST.
+## Purpose
+
+PropertyValue adalah representasi universal seluruh tipe data property.
 
 ---
 
@@ -154,23 +191,53 @@ pub enum PropertyValue {
 
 ---
 
-## Supported Types
+## Serialization Requirement
 
-### String
+PropertyValue harus mendukung:
 
-Contoh:
+```rust
+Serialize
+Deserialize
+```
+
+menggunakan Serde.
+
+---
+
+# 6. Supported Primitive Types
+
+---
+
+## String
+
+Digunakan untuk:
+
+* Text
+* Title
+* Color
+* Identifier
+* Resource Name
+
+Example:
 
 ```json
 {
-  "text": "Hello World"
+  "text": "Hello"
 }
 ```
 
 ---
 
-### Integer
+## Integer
 
-Contoh:
+Digunakan untuk:
+
+* Width
+* Height
+* Padding
+* Font Size
+
+Example:
 
 ```json
 {
@@ -180,9 +247,15 @@ Contoh:
 
 ---
 
-### Float
+## Float
 
-Contoh:
+Digunakan untuk:
+
+* Opacity
+* Scale
+* Progress
+
+Example:
 
 ```json
 {
@@ -192,9 +265,15 @@ Contoh:
 
 ---
 
-### Bool
+## Bool
 
-Contoh:
+Digunakan untuk:
+
+* Enabled
+* Visible
+* Secure Input
+
+Example:
 
 ```json
 {
@@ -204,9 +283,9 @@ Contoh:
 
 ---
 
-# 6. Standard Property Naming Rules
+# 7. Property Naming Convention
 
-Semua property menggunakan:
+Semua property menggunakan format:
 
 ```text
 snake_case
@@ -220,6 +299,7 @@ snake_case
 font_size
 font_weight
 content_mode
+keyboard_type
 ```
 
 ---
@@ -234,21 +314,21 @@ FONT_SIZE
 
 ---
 
-# 7. Common Properties
+# 8. Common Properties
 
-Property berikut dapat digunakan oleh banyak node.
+Property berikut dapat digunakan oleh berbagai NodeType.
 
 ---
 
 ## padding
 
-Type
+Type:
 
 ```text
 Integer
 ```
 
-Example
+Example:
 
 ```json
 {
@@ -260,13 +340,13 @@ Example
 
 ## spacing
 
-Type
+Type:
 
 ```text
 Integer
 ```
 
-Example
+Example:
 
 ```json
 {
@@ -276,53 +356,51 @@ Example
 
 ---
 
-## alignment
-
-Type
-
-```text
-String
-```
-
-Values
-
-```text
-leading
-center
-trailing
-```
-
----
-
 ## width
 
-Type
+Type:
 
 ```text
 Integer
+```
+
+Example:
+
+```json
+{
+  "width": 200
+}
 ```
 
 ---
 
 ## height
 
-Type
+Type:
 
 ```text
 Integer
+```
+
+Example:
+
+```json
+{
+  "height": 100
+}
 ```
 
 ---
 
 ## enabled
 
-Type
+Type:
 
 ```text
 Bool
 ```
 
-Default
+Default:
 
 ```text
 true
@@ -330,9 +408,9 @@ true
 
 ---
 
-# 8. Text Properties
+# 9. Text Node Properties
 
-Node Type:
+NodeType:
 
 ```text
 Text
@@ -344,13 +422,13 @@ Text
 
 ### text
 
-Type
+Type:
 
 ```text
 String
 ```
 
-Example
+Example:
 
 ```json
 {
@@ -364,13 +442,13 @@ Example
 
 ### font_size
 
-Type
+Type:
 
 ```text
 Integer
 ```
 
-Example
+Example:
 
 ```json
 {
@@ -382,13 +460,13 @@ Example
 
 ### font_weight
 
-Type
+Type:
 
 ```text
 String
 ```
 
-Values
+Values:
 
 ```text
 light
@@ -401,13 +479,13 @@ bold
 
 ### color
 
-Type
+Type:
 
 ```text
 String
 ```
 
-Example
+Example:
 
 ```json
 {
@@ -417,9 +495,9 @@ Example
 
 ---
 
-# 9. Button Properties
+# 10. Button Node Properties
 
-Node Type:
+NodeType:
 
 ```text
 Button
@@ -431,13 +509,13 @@ Button
 
 ### title
 
-Type
+Type:
 
 ```text
 String
 ```
 
-Example
+Example:
 
 ```json
 {
@@ -451,13 +529,13 @@ Example
 
 ### action
 
-Type
+Type:
 
 ```text
 String
 ```
 
-Example
+Example:
 
 ```json
 {
@@ -469,13 +547,13 @@ Example
 
 ### style
 
-Type
+Type:
 
 ```text
 String
 ```
 
-Values
+Values:
 
 ```text
 primary
@@ -487,7 +565,7 @@ danger
 
 ### enabled
 
-Type
+Type:
 
 ```text
 Bool
@@ -495,9 +573,9 @@ Bool
 
 ---
 
-# 10. Image Properties
+# 11. Image Node Properties
 
-Node Type:
+NodeType:
 
 ```text
 Image
@@ -509,13 +587,13 @@ Image
 
 ### source
 
-Type
+Type:
 
 ```text
 String
 ```
 
-Example
+Example:
 
 ```json
 {
@@ -529,7 +607,7 @@ Example
 
 ### width
 
-Type
+Type:
 
 ```text
 Integer
@@ -539,7 +617,7 @@ Integer
 
 ### height
 
-Type
+Type:
 
 ```text
 Integer
@@ -549,13 +627,13 @@ Integer
 
 ### content_mode
 
-Type
+Type:
 
 ```text
 String
 ```
 
-Values
+Values:
 
 ```text
 fit
@@ -564,9 +642,9 @@ fill
 
 ---
 
-# 11. TextField Properties
+# 12. TextField Node Properties
 
-Node Type:
+NodeType:
 
 ```text
 TextField
@@ -578,13 +656,13 @@ TextField
 
 ### placeholder
 
-Type
+Type:
 
 ```text
 String
 ```
 
-Example
+Example:
 
 ```json
 {
@@ -598,13 +676,13 @@ Example
 
 ### binding
 
-Type
+Type:
 
 ```text
 String
 ```
 
-Example
+Example:
 
 ```json
 {
@@ -616,13 +694,13 @@ Example
 
 ### keyboard_type
 
-Type
+Type:
 
 ```text
 String
 ```
 
-Values
+Values:
 
 ```text
 default
@@ -635,13 +713,13 @@ phone
 
 ### secure
 
-Type
+Type:
 
 ```text
 Bool
 ```
 
-Default
+Default:
 
 ```text
 false
@@ -649,9 +727,9 @@ false
 
 ---
 
-# 12. VStack Properties
+# 13. VStack Properties
 
-Node Type:
+NodeType:
 
 ```text
 VStack
@@ -663,7 +741,7 @@ VStack
 
 ### spacing
 
-Type
+Type:
 
 ```text
 Integer
@@ -673,7 +751,7 @@ Integer
 
 ### padding
 
-Type
+Type:
 
 ```text
 Integer
@@ -683,13 +761,13 @@ Integer
 
 ### alignment
 
-Type
+Type:
 
 ```text
 String
 ```
 
-Values
+Values:
 
 ```text
 leading
@@ -699,9 +777,9 @@ trailing
 
 ---
 
-# 13. HStack Properties
+# 14. HStack Properties
 
-Node Type:
+NodeType:
 
 ```text
 HStack
@@ -721,9 +799,9 @@ Sama seperti VStack.
 
 ---
 
-# 14. ScrollView Properties
+# 15. ScrollView Properties
 
-Node Type:
+NodeType:
 
 ```text
 ScrollView
@@ -735,20 +813,20 @@ ScrollView
 
 ### axis
 
-Type
+Type:
 
 ```text
 String
 ```
 
-Values
+Values:
 
 ```text
 vertical
 horizontal
 ```
 
-Default
+Default:
 
 ```text
 vertical
@@ -758,13 +836,13 @@ vertical
 
 ### shows_indicator
 
-Type
+Type:
 
 ```text
 Bool
 ```
 
-Default
+Default:
 
 ```text
 true
@@ -772,9 +850,9 @@ true
 
 ---
 
-# 15. Spacer Properties
+# 16. Spacer Properties
 
-Node Type:
+NodeType:
 
 ```text
 Spacer
@@ -786,13 +864,13 @@ Spacer
 
 ### min_length
 
-Type
+Type:
 
 ```text
 Integer
 ```
 
-Example
+Example:
 
 ```json
 {
@@ -802,20 +880,34 @@ Example
 
 ---
 
-# 16. Property Validation Rules
+# 17. Property Validation Rules
+
+Validator wajib memverifikasi seluruh property.
+
+---
 
 ## Rule 1
 
 Required property wajib tersedia.
 
-Contoh:
-
-Text wajib memiliki:
+Valid:
 
 ```json
 {
   "text": "Hello"
 }
+```
+
+Invalid:
+
+```json
+{}
+```
+
+untuk NodeType:
+
+```text
+Text
 ```
 
 ---
@@ -844,21 +936,7 @@ Valid:
 
 ## Rule 3
 
-Unknown property menghasilkan warning.
-
-Contoh:
-
-```json
-{
-  "banana": true
-}
-```
-
----
-
-## Rule 4
-
-Property name harus snake_case.
+Property name harus menggunakan snake_case.
 
 Valid:
 
@@ -874,11 +952,65 @@ fontSize
 
 ---
 
-# 17. Generator Mapping Examples
+## Rule 4
+
+Unknown property menghasilkan warning.
+
+Example:
+
+```json
+{
+  "banana": true
+}
+```
+
+---
+
+# 18. Serialization Requirements
+
+Property System harus mendukung:
+
+---
+
+## Serialize
+
+```rust
+serde_json::to_string()
+```
+
+---
+
+## Deserialize
+
+```rust
+serde_json::from_str()
+```
+
+---
+
+## Roundtrip Safety
+
+Harus selalu berlaku:
+
+```text
+Properties
+     ↓
+JSON
+     ↓
+Properties
+```
+
+tanpa kehilangan informasi.
+
+---
+
+# 19. Generator Mapping Examples
+
+---
 
 ## Text
 
-AST
+AST:
 
 ```json
 {
@@ -886,13 +1018,13 @@ AST
 }
 ```
 
-SwiftUI
+SwiftUI:
 
 ```swift
 Text("Hello")
 ```
 
-Compose
+Compose:
 
 ```kotlin
 Text("Hello")
@@ -902,7 +1034,7 @@ Text("Hello")
 
 ## Button
 
-AST
+AST:
 
 ```json
 {
@@ -910,13 +1042,13 @@ AST
 }
 ```
 
-SwiftUI
+SwiftUI:
 
 ```swift
 Button("Login") {}
 ```
 
-Compose
+Compose:
 
 ```kotlin
 Button(
@@ -930,7 +1062,7 @@ Button(
 
 ## VStack
 
-AST
+AST:
 
 ```json
 {
@@ -938,13 +1070,13 @@ AST
 }
 ```
 
-SwiftUI
+SwiftUI:
 
 ```swift
 VStack(spacing: 16)
 ```
 
-Compose
+Compose:
 
 ```kotlin
 Column(
@@ -955,17 +1087,19 @@ Column(
 
 ---
 
-# 18. Future Property Extensions
+# 20. Future Extensions
 
 Versi berikutnya akan mendukung:
+
+---
 
 ## Layout
 
 ```text
 margin
-frame
 max_width
 max_height
+frame
 ```
 
 ---
@@ -981,15 +1115,6 @@ shadow
 
 ---
 
-## State
-
-```text
-binding
-state_key
-```
-
----
-
 ## Navigation
 
 ```text
@@ -999,25 +1124,53 @@ destination
 
 ---
 
-# 19. Success Criteria
+## State Management
 
-Property System dianggap berhasil apabila:
-
-* Seluruh widget MVP memiliki property specification.
-* Seluruh layout MVP memiliki property specification.
-* Generator dapat menggunakan property tanpa ambiguity.
-* Property dapat di-serialize ke JSON.
-* Property dapat divalidasi.
-* Property dapat diperluas tanpa breaking changes.
+```text
+state_key
+binding
+observable
+```
 
 ---
 
-# 20. Guiding Principle
+# 21. Versioning Strategy
 
-Property System harus menyimpan informasi yang cukup untuk menghasilkan source code native tanpa pernah menyimpan implementasi spesifik platform.
+Property baru dapat ditambahkan tanpa breaking changes.
 
-Property adalah bahasa universal antara AST dan Generator.
+Property yang sudah dirilis tidak boleh dihapus tanpa migration path yang jelas.
 
-> AST mendefinisikan struktur UI.
-> Property mendefinisikan konfigurasi UI.
-> Generator menerjemahkan keduanya menjadi source code native.
+---
+
+# 22. Success Criteria
+
+Property System dianggap berhasil apabila:
+
+* Seluruh NodeType MVP memiliki property specification.
+* Property dapat di-serialize ke JSON.
+* Property dapat di-deserialize dari JSON.
+* Property dapat divalidasi.
+* Generator dapat menggunakan property tanpa ambiguity.
+* Mendukung ekspansi tanpa perubahan fundamental AST.
+
+---
+
+# 23. Guiding Principle
+
+AST mendefinisikan struktur UI.
+
+Property System mendefinisikan konfigurasi UI.
+
+Generator menerjemahkan keduanya menjadi source code native.
+
+```text
+NodeType
+     +
+Properties
+     ↓
+Generator
+     ↓
+SwiftUI / Compose
+```
+
+Property System harus tetap sederhana, extensible, platform-independent, dan menjadi kontrak stabil antara AST Engine dan seluruh Generator dalam ekosistem RustyKrab.
