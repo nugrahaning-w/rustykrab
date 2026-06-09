@@ -331,20 +331,3 @@ rustup component add clippy
 ```
 
 ---
-
-# Project Status
-
-Current Milestone:
-
-```text
-Milestone 1
-Compiler Core
-```
-
-Current Focus:
-
-```text
-Workspace Foundation
-Development Tooling
-Core Crate Implementation
-```
