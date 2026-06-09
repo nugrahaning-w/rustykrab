@@ -1,14 +1,30 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+#![forbid(unsafe_code)]
+#![warn(missing_docs)]
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+//! RustyKrab AST
+//!
+//! Platform-independent Abstract Syntax Tree (AST)
+//! used by RustyKrab generators, validators,
+//! parsers, and tooling.
+//!
+//! This crate provides:
+//!
+//! - AST Root
+//! - Node Model
+//! - NodeKind System
+//! - Metadata System
+//! - Tree Manipulation APIs
+//!
+//! Most users should import:
+//!
+//! ```rust
+//! use rustykrab_ast::prelude::*;
+//! ```
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub mod ast;
+pub mod ids;
+pub mod kinds;
+pub mod metadata;
+pub mod node;
+
+pub mod prelude;
