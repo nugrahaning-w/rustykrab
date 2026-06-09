@@ -1,5 +1,6 @@
 # 🦀 RustyKrab
 <img src="docs/RustyKrab.png" alt="Icon Description" width="240" height="240" align="center">
+
 **Rust-First Native UI Compiler for Mobile Multiplatform Development**
 
 RustyKrab is an experimental cross-platform application framework built with Rust that compiles a declarative UI DSL into fully native mobile applications.
