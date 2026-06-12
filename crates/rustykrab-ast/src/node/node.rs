@@ -79,11 +79,7 @@ impl Node {
     ///     ),
     /// );
     /// ```
-    pub fn property(
-        mut self,
-        key: impl Into<String>,
-        value: PropertyValue,
-    ) -> Self {
+    pub fn property(mut self, key: impl Into<String>, value: PropertyValue) -> Self {
         self.properties.insert(key.into(), value);
 
         self
