@@ -26,5 +26,5 @@ pub mod ids;
 pub mod kinds;
 pub mod metadata;
 pub mod node;
-
 pub mod prelude;
+pub mod property;
