@@ -20,11 +20,14 @@
 //! ```rust
 //! use rustykrab_ast::prelude::*;
 //! ```
-
 pub mod ast;
 pub mod ids;
 pub mod kinds;
 pub mod metadata;
+pub mod modifier;
 pub mod node;
 pub mod prelude;
 pub mod property;
+
+#[cfg(test)]
+mod tests;

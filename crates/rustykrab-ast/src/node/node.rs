@@ -2,28 +2,25 @@ use crate::{
     ids::NodeId,
     kinds::NodeKind,
     metadata::Metadata,
+    modifier::{Modifier, ModifierChain, ModifierKind, ModifierValue},
     property::{PropertyAccess, PropertyMap, PropertyValue},
 };
-
 /// Represents a single AST node.
 ///
 /// Node is the fundamental building block
 /// of the RustyKrab AST.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Node {
-    /// Unique identifier.
     pub id: NodeId,
 
-    /// Semantic node type.
     pub kind: NodeKind,
 
-    /// Widget properties.
     pub properties: PropertyMap,
 
-    /// Metadata.
+    pub modifiers: ModifierChain,
+
     pub metadata: Metadata,
 
-    /// Child nodes.
     pub children: Vec<Node>,
 }
 
@@ -34,6 +31,7 @@ impl Node {
             id,
             kind,
             properties: PropertyMap::default(),
+            modifiers: ModifierChain::default(),
             metadata: Metadata::default(),
             children: Vec::new(),
         }
@@ -45,6 +43,7 @@ impl Node {
             id,
             kind,
             properties: PropertyMap::default(),
+            modifiers: ModifierChain::default(),
             metadata,
             children: Vec::new(),
         }
@@ -105,6 +104,28 @@ impl Node {
     /// Finds a direct child.
     pub fn find_child(&self, id: &NodeId) -> Option<&Node> {
         self.children.iter().find(|child| child.id == *id)
+    }
+
+    /// Adds a modifier.
+    pub fn add_modifier(&mut self, modifier: Modifier) {
+        self.modifiers.add(modifier);
+    }
+
+    /// Returns modifier count.
+    pub fn modifier_count(&self) -> usize {
+        self.modifiers.len()
+    }
+
+    /// Returns true if node has modifiers.
+    pub fn has_modifiers(&self) -> bool {
+        !self.modifiers.is_empty()
+    }
+
+    /// Builder-style modifier insertion.
+    pub fn modifier(mut self, kind: ModifierKind, value: ModifierValue) -> Self {
+        self.modifiers.add(Modifier::new(kind, value));
+
+        self
     }
 }
 
@@ -235,5 +256,33 @@ mod tests {
         let child = root.find_child(&NodeId::new("text"));
 
         assert!(child.is_some());
+    }
+    #[test]
+    fn add_modifier_to_node() {
+        use crate::modifier::{Modifier, ModifierKind, ModifierValue};
+
+        let mut node = Node::new(NodeId::new("text"), NodeKind::Text);
+
+        node.add_modifier(Modifier::new(
+            ModifierKind::Padding,
+            ModifierValue::Integer(16),
+        ));
+
+        assert_eq!(node.modifier_count(), 1,);
+    }
+    #[test]
+    fn node_has_modifiers() {
+        use crate::modifier::{Modifier, ModifierKind, ModifierValue};
+
+        let mut node = Node::new(NodeId::new("text"), NodeKind::Text);
+
+        assert!(!node.has_modifiers());
+
+        node.add_modifier(Modifier::new(
+            ModifierKind::Padding,
+            ModifierValue::Integer(16),
+        ));
+
+        assert!(node.has_modifiers());
     }
 }

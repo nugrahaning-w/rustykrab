@@ -204,9 +204,9 @@ mod tests {
 
     #[test]
     fn from_f64() {
-        let value: PropertyValue = 3.14_f64.into();
+        let value: PropertyValue = 1.5_f64.into();
 
-        assert_eq!(value, PropertyValue::Float(3.14));
+        assert_eq!(value, PropertyValue::Float(1.5,),);
     }
 
     #[test]

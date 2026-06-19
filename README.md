@@ -1,24 +1,36 @@
 # 🦀 RustyKrab
-<img src="docs/RustyKrab.png" alt="Icon Description" width="240" height="240" align="center">
 
-**Rust-First Native UI Compiler for Mobile Multiplatform Development**
+<p align="center">
+  <img src="docs/RustyKrab.png" width="240" alt="RustyKrab Logo">
+</p>
 
-RustyKrab is an experimental cross-platform application framework built with Rust that compiles a declarative UI DSL into fully native mobile applications.
+# Rust-First Native UI Compiler for Mobile Multiplatform Development
+
+RustyKrab is an experimental Rust-first framework for building mobile applications using a declarative UI architecture.
 
 Unlike Flutter, React Native, or other runtime-based frameworks, RustyKrab does not ship a rendering engine.
 
-Instead, RustyKrab generates native source code for each target platform.
+Instead, RustyKrab compiles a platform-independent UI representation into fully native source code.
 
 Current Targets:
 
-* iOS → SwiftUI
-* Android → Jetpack Compose
+- iOS → SwiftUI
+- Android → Jetpack Compose
 
 Future Targets:
 
-* Web
-* Desktop
-* WASM
+- Web
+- Desktop
+- WASM
+- Embedded UI
+
+---
+
+# Vision
+
+> Write UI once in Rust. Generate native applications everywhere.
+
+RustyKrab aims to become a complete application platform capable of generating native applications for multiple environments without introducing runtime rendering layers.
 
 ---
 
@@ -26,10 +38,11 @@ Future Targets:
 
 Modern cross-platform frameworks often introduce:
 
-* Additional runtime layers
-* Rendering engines
-* Platform bridges
-* Performance overhead
+- Rendering engines
+- Runtime abstraction layers
+- Platform bridges
+- Performance overhead
+- Increased application size
 
 RustyKrab takes a different approach.
 
@@ -47,9 +60,7 @@ App::new(
 )
 ```
 
-Generated Output:
-
-### iOS
+Generated SwiftUI:
 
 ```swift
 VStack {
@@ -60,7 +71,7 @@ VStack {
 }
 ```
 
-### Android
+Generated Jetpack Compose:
 
 ```kotlin
 Column {
@@ -78,15 +89,72 @@ No rendering engine.
 
 No bridge.
 
-No runtime UI abstraction.
+No UI runtime.
 
-Just native applications.
+Only native applications.
+
+---
+
+# Core Principles
+
+## Native First
+
+Generated applications use platform-native technologies.
+
+- SwiftUI
+- Jetpack Compose
+
+---
+
+## AST Driven
+
+All generators consume AST.
+
+```text
+DSL
+ ↓
+AST
+ ↓
+Generator
+```
+
+Generators never read DSL structures directly.
+
+---
+
+## Platform Independent
+
+The AST never contains:
+
+- SwiftUI-specific concepts
+- Compose-specific concepts
+- Android-specific concepts
+- iOS-specific concepts
+
+---
+
+## Compile-Time Generation
+
+Most work happens during compilation.
+
+Runtime complexity is minimized.
+
+---
+
+## Extensible Architecture
+
+RustyKrab is designed to support:
+
+- New widgets
+- New generators
+- New platforms
+- Plugin systems
+
+without redesigning the AST.
 
 ---
 
 # Architecture
-
-RustyKrab follows a compiler architecture.
 
 ```text
 Developer Code
@@ -110,72 +178,11 @@ Developer Code
 SwiftUI   Compose
 ```
 
-The AST acts as the single source of truth for all platform generators.
+The AST acts as the single source of truth for every generator.
 
 ---
 
-# Core Principles
-
-## Native First
-
-RustyKrab always generates native platform code.
-
-Generated applications use:
-
-* SwiftUI on iOS
-* Jetpack Compose on Android
-
----
-
-## AST Driven
-
-All generators consume AST.
-
-Generators never read DSL structures directly.
-
-```text
-DSL
- ↓
-AST
- ↓
-Generator
-```
-
----
-
-## Platform Independent
-
-The AST does not contain:
-
-* SwiftUI-specific concepts
-* Compose-specific concepts
-* Android-specific concepts
-* iOS-specific concepts
-
----
-
-## Compile-Time Generation
-
-Most work is performed during compilation.
-
-Runtime complexity is minimized.
-
----
-
-## Extensibility First
-
-RustyKrab is designed to support:
-
-* New widgets
-* New generators
-* Plugin systems
-* Additional platforms
-
-without redesigning the AST.
-
----
-
-# Project Structure
+# Workspace Structure
 
 ```text
 rustykrab/
@@ -196,8 +203,8 @@ rustykrab/
 ├── rustykrab-cli/
 │
 ├── examples/
-├── templates/
 ├── docs/
+├── templates/
 └── tests/
 ```
 
@@ -211,11 +218,10 @@ Shared framework primitives.
 
 Responsibilities:
 
-* Error handling
-* Result types
-* Shared traits
-* Configuration
-* Utilities
+- Error handling
+- Shared traits
+- Utilities
+- Configuration
 
 ---
 
@@ -237,35 +243,37 @@ Platform-independent UI representation.
 
 Responsibilities:
 
-* Node model
-* Property system
-* Modifier system
-* Event system
-* Binding system
-* Metadata system
+- AST Root
+- Node System
+- Property System
+- Modifier System
+- Event System
+- Binding System
+- Metadata System
 
 ---
 
 ## rustykrab-parser
 
-Converts widget trees into AST.
+Transforms widget trees into AST.
 
 Responsibilities:
 
-* AST generation
-* Validation entry point
+- Parsing
+- Validation Entry Point
+- AST Construction
 
 ---
 
 ## rustykrab-generator
 
-Generator abstractions.
+Shared generator abstractions.
 
 Responsibilities:
 
-* Generator contracts
-* Visitor interfaces
-* Shared generation utilities
+- Generator Contracts
+- Visitor APIs
+- Shared Utilities
 
 ---
 
@@ -275,8 +283,8 @@ SwiftUI backend.
 
 Responsibilities:
 
-* SwiftUI generation
-* iOS project generation
+- SwiftUI Generation
+- Xcode Project Generation
 
 ---
 
@@ -286,21 +294,21 @@ Jetpack Compose backend.
 
 Responsibilities:
 
-* Compose generation
-* Android project generation
+- Compose Generation
+- Android Project Generation
 
 ---
 
 ## rustykrab-cli
 
-Command line interface.
+Command Line Interface.
 
 Responsibilities:
 
-* Project creation
-* Build
-* Run
-* Environment validation
+- Project Creation
+- Build
+- Run
+- Environment Diagnostics
 
 ---
 
@@ -308,12 +316,18 @@ Responsibilities:
 
 RustyKrab uses a generic AST architecture.
 
+## AST Root
+
 ```rust
 pub struct Ast {
     pub version: AstVersion,
     pub root: Node,
 }
 ```
+
+---
+
+## Node Model
 
 ```rust
 pub struct Node {
@@ -335,114 +349,178 @@ pub struct Node {
 }
 ```
 
-This design enables:
+---
 
-* Scalability
-* Plugin support
-* Future generators
-* Future widgets
+# AST Architecture Layers
 
-without AST redesign.
+```text
+AST
+│
+├── Node System
+├── Property System
+├── Modifier System
+├── Event System
+├── Binding System
+└── Metadata System
+```
 
 ---
 
-# Widget System
+# Node System
 
-Current planned widgets:
+Provides:
 
-### Basic Widgets
+- Node
+- NodeId
+- NodeKind
+- Tree Management
+- Children Management
 
-* Text
-* Button
-* Image
-* TextField
-* Spacer
-
-### Layout Widgets
-
-* VStack
-* HStack
-* ZStack
-* ScrollView
-
-### Navigation Widgets
-
-* NavigationView
-* NavigationLink
-
-### Collection Widgets
-
-* List
-* Grid
-
-### Custom Widgets
+Example:
 
 ```rust
-NodeKind::Custom(
-    "ChartView"
-)
+let root = Node::new(
+    NodeId::new("root"),
+    NodeKind::Container,
+);
 ```
 
 ---
 
 # Property System
 
-Widget configuration is stored in a flexible property model.
+Properties provide flexible widget configuration.
 
 Example:
+
+```rust
+let title = Node::new(
+    NodeId::new("title"),
+    NodeKind::Text,
+)
+.property(
+    PropertyKeys::VALUE,
+    PropertyValue::String(
+        "Hello RustyKrab".into(),
+    ),
+);
+```
+
+AST Representation:
 
 ```json
 {
   "kind": "Text",
   "properties": {
-    "value": "Hello"
+    "value": "Hello RustyKrab"
   }
 }
 ```
 
-This avoids creating specialized AST nodes for every widget type.
+Current Features:
+
+- PropertyValue
+- PropertyObject
+- PropertyMap
+- PropertyAccess
+- Property Validation
+- Standard Property Keys
+- Property Builder APIs
 
 ---
 
 # Modifier System
 
-Inspired by SwiftUI and Jetpack Compose.
+Inspired by:
+
+- SwiftUI Modifiers
+- Jetpack Compose Modifiers
+
+Current Features:
+
+- ModifierKind
+- ModifierValue
+- Modifier
+- ModifierChain
+- Validation Rules
+- Categories
+- Builder APIs
 
 Example:
 
 ```rust
-Text::new("Welcome")
-    .padding(16)
-    .foreground(Color::Blue)
+let title = Node::new(
+    NodeId::new("title"),
+    NodeKind::Text,
+)
+.padding(16)
+.background("#FF0000")
+.corner_radius(8)
+.opacity(0.8);
 ```
 
 AST:
 
 ```text
 Text
- └── Modifiers
-      ├── Padding
-      └── Foreground
+└── Modifiers
+     ├── Padding(16)
+     ├── Background("#FF0000")
+     ├── CornerRadius(8)
+     └── Opacity(0.8)
 ```
+
+Supported Categories:
+
+## Layout
+
+- Padding
+- Margin
+- Width
+- Height
+- Alignment
+
+## Style
+
+- Background
+- Foreground Color
+- Border
+- Corner Radius
+
+## Visual Effects
+
+- Opacity
+- Shadow
+- Blur
+
+## Accessibility
+
+- Accessibility Label
+- Accessibility Identifier
+
+## Animation
+
+- Animation
+- Transition
 
 ---
 
 # Event System
 
-Platform-independent interaction model.
+🚧 Planned
 
-Example:
+Examples:
 
 ```rust
 Button::new("Login")
     .on_click("login")
 ```
 
-AST:
+Future AST:
 
 ```json
 {
-  "event": "Click",
+  "event": "click",
   "action": "login"
 }
 ```
@@ -451,15 +529,15 @@ AST:
 
 # State Binding System
 
-Reactive UI updates are achieved through bindings.
+🚧 Planned
 
-Example:
+Examples:
 
 ```rust
 Text::new(counter)
 ```
 
-AST:
+Future AST:
 
 ```json
 {
@@ -472,71 +550,104 @@ AST:
 
 ---
 
-# Navigation
-
-Planned API:
+# Example AST
 
 ```rust
-Navigator::push()
-
-Navigator::pop()
-
-Navigator::replace()
+let screen = Node::new(
+    NodeId::new("screen"),
+    NodeKind::Container,
+)
+.child(
+    Node::new(
+        NodeId::new("title"),
+        NodeKind::Text,
+    )
+    .property(
+        PropertyKeys::VALUE,
+        PropertyValue::String(
+            "Welcome".into(),
+        ),
+    )
+    .padding(16)
+    .background("#FF0000")
+);
 ```
 
-Mappings:
+Conceptual AST:
 
-### iOS
-
-```swift
-NavigationStack
-```
-
-### Android
-
-```kotlin
-NavHost
+```text
+Container
+└── Text
+     ├── Properties
+     │
+     │    value = "Welcome"
+     │
+     └── Modifiers
+          ├── Padding(16)
+          └── Background("#FF0000")
 ```
 
 ---
 
 # CLI
 
-Create project:
+Planned commands:
 
 ```bash
 krab create MyApp
-```
 
-Build iOS:
-
-```bash
 krab build ios
-```
 
-Build Android:
-
-```bash
 krab build android
-```
 
-Run iOS:
-
-```bash
 krab run ios
-```
 
-Run Android:
-
-```bash
 krab run android
-```
 
-Environment diagnostics:
-
-```bash
 krab doctor
 ```
+
+---
+
+# Current Development Status
+
+## Completed
+
+### Workspace & Tooling
+
+- Cargo Workspace
+- Rustfmt
+- Clippy
+- Makefile
+- EditorConfig
+
+### AST Foundation
+
+- AST Root
+- Node System
+- Metadata System
+- Property System
+- Modifier System
+
+---
+
+## In Progress
+
+- Event System
+- Binding System
+
+---
+
+## Planned
+
+- Validation Framework
+- Visitor Pattern
+- Serialization
+- Widget DSL
+- Parser
+- SwiftUI Generator
+- Compose Generator
+- CLI
 
 ---
 
@@ -546,11 +657,11 @@ krab doctor
 
 Compiler Core
 
-* Workspace
-* Tooling
-* AST Foundation
-* Generator Contracts
-* Parser Foundation
+- Workspace
+- Tooling
+- AST Foundation
+- Parser Foundation
+- Generator Contracts
 
 ---
 
@@ -558,9 +669,10 @@ Compiler Core
 
 Widget DSL
 
-* Widget APIs
-* Layout System
-* Property Integration
+- Widget APIs
+- Layout Widgets
+- Property Integration
+- Modifier Integration
 
 ---
 
@@ -568,9 +680,9 @@ Widget DSL
 
 SwiftUI Generator
 
-* SwiftUI Visitor
-* Swift Source Generation
-* Xcode Project Generation
+- SwiftUI Visitor
+- Swift Source Generation
+- Xcode Project Generation
 
 ---
 
@@ -578,19 +690,19 @@ SwiftUI Generator
 
 Compose Generator
 
-* Compose Visitor
-* Kotlin Source Generation
-* Android Project Generation
+- Compose Visitor
+- Kotlin Source Generation
+- Android Project Generation
 
 ---
 
 ## Milestone 5
 
-State Management
+Reactive State
 
-* Reactive State
-* Binding Runtime
-* Update Propagation
+- State Management
+- Binding Runtime
+- Update Propagation
 
 ---
 
@@ -598,8 +710,8 @@ State Management
 
 Navigation
 
-* Navigator API
-* Navigation AST Integration
+- Navigator API
+- Navigation AST Integration
 
 ---
 
@@ -607,27 +719,30 @@ Navigation
 
 Plugin System
 
-* Custom Widgets
-* Custom Generators
-* Extension APIs
+- Custom Widgets
+- Custom Generators
+- Extension APIs
 
 ---
 
-# Long-Term Vision
+# Contributing
 
-RustyKrab aims to become a Rust-first application platform capable of generating native applications across multiple environments.
+RustyKrab is currently in active early development.
 
-Future Targets:
+Contributors are welcome.
 
-* Mobile
-* Web
-* Desktop
-* Embedded UI
-* WASM
+Areas where help is needed:
 
-The ultimate goal is:
+- AST Development
+- Widget DSL
+- Parser
+- SwiftUI Generation
+- Compose Generation
+- Documentation
+- Testing
+- Examples
 
-> Write UI once in Rust. Generate native applications everywhere.
+Please check project issues and discussions before starting work.
 
 ---
 
@@ -641,4 +756,10 @@ License information will be added before the first public release.
 
 🚧 Early Development
 
-The project is currently focused on building the compiler core and AST foundation.
+Current Focus:
+
+- AST Foundation
+- Event System
+- Binding System
+
+The project is not production-ready yet.
