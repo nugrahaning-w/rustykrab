@@ -21,6 +21,7 @@
 //! use rustykrab_ast::prelude::*;
 //! ```
 pub mod ast;
+pub mod event;
 pub mod ids;
 pub mod kinds;
 pub mod metadata;

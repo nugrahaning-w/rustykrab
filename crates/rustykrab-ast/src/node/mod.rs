@@ -3,6 +3,8 @@ mod node;
 pub use node::Node;
 
 #[cfg(test)]
+mod event_tests;
+#[cfg(test)]
 mod modifier_tests;
 #[cfg(test)]
 mod property_tests;

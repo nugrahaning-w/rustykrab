@@ -1,4 +1,5 @@
 use crate::{
+    event::{EventCollection, EventHandler},
     ids::NodeId,
     kinds::NodeKind,
     metadata::Metadata,
@@ -19,6 +20,8 @@ pub struct Node {
 
     pub modifiers: ModifierChain,
 
+    pub events: EventCollection,
+
     pub metadata: Metadata,
 
     pub children: Vec<Node>,
@@ -32,6 +35,7 @@ impl Node {
             kind,
             properties: PropertyMap::default(),
             modifiers: ModifierChain::default(),
+            events: EventCollection::default(),
             metadata: Metadata::default(),
             children: Vec::new(),
         }
@@ -44,6 +48,7 @@ impl Node {
             kind,
             properties: PropertyMap::default(),
             modifiers: ModifierChain::default(),
+            events: EventCollection::default(),
             metadata,
             children: Vec::new(),
         }
@@ -124,6 +129,31 @@ impl Node {
     /// Builder-style modifier insertion.
     pub fn modifier(mut self, kind: ModifierKind, value: ModifierValue) -> Self {
         self.modifiers.add(Modifier::new(kind, value));
+
+        self
+    }
+
+    /// Adds an event handler.
+    pub fn add_event(&mut self, event: EventHandler) {
+        self.events.add(event);
+    }
+
+    /// Number of events.
+    pub fn event_count(&self) -> usize {
+        self.events.len()
+    }
+
+    /// Returns true if node has events.
+    pub fn has_events(&self) -> bool {
+        !self.events.is_empty()
+    }
+
+    pub fn events(&self) -> &EventCollection {
+        &self.events
+    }
+
+    pub fn event(mut self, event: EventHandler) -> Self {
+        self.events.add(event);
 
         self
     }
@@ -284,5 +314,46 @@ mod tests {
         ));
 
         assert!(node.has_modifiers());
+    }
+    #[test]
+    fn add_event_to_node() {
+        use crate::event::{EventAction, EventHandler, EventKind};
+
+        let mut node = Node::new(NodeId::new("button"), NodeKind::Button);
+
+        node.add_event(EventHandler::new(
+            EventKind::Click,
+            EventAction::new("login"),
+        ));
+
+        assert_eq!(node.event_count(), 1,);
+    }
+
+    #[test]
+    fn node_has_events() {
+        use crate::event::{EventAction, EventHandler, EventKind};
+
+        let mut node = Node::new(NodeId::new("button"), NodeKind::Button);
+
+        assert!(!node.has_events());
+
+        node.add_event(EventHandler::new(
+            EventKind::Click,
+            EventAction::new("login"),
+        ));
+
+        assert!(node.has_events());
+    }
+
+    #[test]
+    fn builder_event() {
+        use crate::event::{EventAction, EventHandler, EventKind};
+
+        let node = Node::new(NodeId::new("button"), NodeKind::Button).event(EventHandler::new(
+            EventKind::Click,
+            EventAction::new("login"),
+        ));
+
+        assert_eq!(node.event_count(), 1,);
     }
 }
