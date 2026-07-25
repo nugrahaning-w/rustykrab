@@ -17,13 +17,6 @@ Current Targets:
 - iOS → SwiftUI
 - Android → Jetpack Compose
 
-Future Targets:
-
-- Web
-- Desktop
-- WASM
-- Embedded UI
-
 ---
 
 # Vision
